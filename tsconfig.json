@@ -2,14 +2,14 @@
   "compilerOptions": {
     "lib": ["ESNext"],
     "target": "ESNext",
-    "module": "node16",
+    "module": "esnext",
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
     "types": ["bun-types"],
 
     /* Bundler mode */
-    "moduleResolution": "node16",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
