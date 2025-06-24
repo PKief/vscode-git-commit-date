@@ -3,119 +3,148 @@ import { formatDate } from "./utils/dateUtils.js";
 import { commitWithCustomDate, isGitRepository } from "./utils/gitUtils.js";
 import { showDatePicker } from "./utils/pickerUtils.js";
 
+/**
+ * Helper to read extension configuration
+ */
+function getExtensionConfig() {
+  const config = vscode.workspace.getConfiguration("commitDateSelector");
+  return {
+    showStatusBar: config.get<boolean>("showStatusBar", true),
+    dateFormat: config.get<string>("dateFormat", "YYYY-MM-DD HH:mm:ss"),
+  };
+}
+
+/**
+ * Helper to show error messages
+ */
+function showError(message: string) {
+  vscode.window.showErrorMessage(message);
+}
+
+/**
+ * Status bar manager for custom commit date
+ */
+class CommitDateStatusBar {
+  private statusBarItem: vscode.StatusBarItem;
+  private get customCommitDate(): Date | null {
+    return this._customCommitDate;
+  }
+  private set customCommitDate(date: Date | null) {
+    this._customCommitDate = date;
+    this.update();
+  }
+  private _customCommitDate: Date | null = null;
+
+  constructor(private context: vscode.ExtensionContext) {
+    this.statusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      100,
+    );
+    this.statusBarItem.command = "commitDateSelector.setDate";
+    context.subscriptions.push(this.statusBarItem);
+    this.update();
+  }
+
+  public setDate(date: Date | null) {
+    this.customCommitDate = date;
+  }
+
+  public getDate() {
+    return this.customCommitDate;
+  }
+
+  public update() {
+    const { showStatusBar, dateFormat } = getExtensionConfig();
+    if (!showStatusBar) {
+      this.statusBarItem.hide();
+      return;
+    }
+    if (this.customCommitDate) {
+      this.statusBarItem.text = `$(clock) ${formatDate(this.customCommitDate, dateFormat)}`;
+      this.statusBarItem.tooltip = "Custom commit date set. Click to change.";
+    } else {
+      this.statusBarItem.text = "$(clock) Set Date";
+      this.statusBarItem.tooltip = "Click to set custom commit date";
+    }
+    this.statusBarItem.show();
+  }
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log("Commit Date Selector extension is now active");
 
-  let customCommitDate: Date | null = null;
+  // Status bar manager instance
+  const statusBar = new CommitDateStatusBar(context);
 
-  // Create status bar item
-  const statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Left,
-    100,
+  // Register commands
+  context.subscriptions.push(
+    registerSetDateCommand(statusBar),
+    registerClearDateCommand(statusBar),
+    registerCommitWithDateCommand(statusBar),
   );
-  statusBarItem.command = "commitDateSelector.setDate";
-  context.subscriptions.push(statusBarItem);
 
-  // Update status bar
-  function updateStatusBar() {
-    const config = vscode.workspace.getConfiguration("commitDateSelector");
-    const showStatusBar = config.get<boolean>("showStatusBar", true);
-
-    if (!showStatusBar) {
-      statusBarItem.hide();
-      return;
+  // Listen for configuration changes
+  vscode.workspace.onDidChangeConfiguration((e) => {
+    if (e.affectsConfiguration("commitDateSelector")) {
+      statusBar.update();
     }
+  });
+}
 
-    if (customCommitDate) {
-      const dateFormat = config.get<string>(
-        "dateFormat",
-        "YYYY-MM-DD HH:mm:ss",
-      );
-      const formattedDate = formatDate(customCommitDate, dateFormat);
-      statusBarItem.text = `$(clock) ${formattedDate}`;
-      statusBarItem.tooltip = "Custom commit date set. Click to change.";
-      statusBarItem.show();
-    } else {
-      statusBarItem.text = "$(clock) Set Date";
-      statusBarItem.tooltip = "Click to set custom commit date";
-      statusBarItem.show();
-    }
-  }
-
-  // Command: Set custom commit date with picker
-  const setDateCommand = vscode.commands.registerCommand(
+function registerSetDateCommand(statusBar: CommitDateStatusBar) {
+  return vscode.commands.registerCommand(
     "commitDateSelector.setDate",
     async () => {
       try {
-        const selectedDate = await showDatePicker(customCommitDate);
-
+        const selectedDate = await showDatePicker(statusBar.getDate());
         if (selectedDate === null) {
-          // Check if this was a clear action
-          if (customCommitDate) {
-            customCommitDate = null;
+          // Clear action
+          if (statusBar.getDate()) {
+            statusBar.setDate(null);
             vscode.window.showInformationMessage("Custom commit date cleared");
-            updateStatusBar();
           }
           return;
         }
-
-        customCommitDate = selectedDate;
+        statusBar.setDate(selectedDate);
         vscode.window.showInformationMessage(
-          `Commit date set to: ${formatDate(
-            customCommitDate,
-            "YYYY-MM-DD HH:mm:ss",
-          )}`,
+          `Commit date set to: ${formatDate(selectedDate, "YYYY-MM-DD HH:mm:ss")}`,
         );
-        updateStatusBar();
       } catch (error) {
-        vscode.window.showErrorMessage(`Error setting date: ${error}`);
+        showError(`Error setting date: ${error}`);
       }
     },
   );
+}
 
-  // Command: Clear custom commit date
-  const clearDateCommand = vscode.commands.registerCommand(
-    "commitDateSelector.clearDate",
-    () => {
-      customCommitDate = null;
-      updateStatusBar();
-      vscode.window.showInformationMessage("Custom commit date cleared");
-    },
-  );
+function registerClearDateCommand(statusBar: CommitDateStatusBar) {
+  return vscode.commands.registerCommand("commitDateSelector.clearDate", () => {
+    statusBar.setDate(null);
+    vscode.window.showInformationMessage("Custom commit date cleared");
+  });
+}
 
-  // Command: Commit with custom date
-  const commitWithDateCommand = vscode.commands.registerCommand(
+function registerCommitWithDateCommand(statusBar: CommitDateStatusBar) {
+  return vscode.commands.registerCommand(
     "commitDateSelector.commitWithDate",
     async () => {
       try {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
-          vscode.window.showErrorMessage("No workspace folder open");
+          showError("No workspace folder open");
           return;
         }
-
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
-
-        // Check if we're in a git repository
         if (!(await isGitRepository(workspaceRoot))) {
-          vscode.window.showErrorMessage("Not a git repository");
+          showError("Not a git repository");
           return;
         }
-
-        // Get commit message
         const commitMessage = await vscode.window.showInputBox({
           prompt: "Enter commit message",
           placeHolder: "Commit message",
-          validateInput: (value: string) => {
-            return value.trim() ? null : "Commit message cannot be empty";
-          },
+          validateInput: (value: string) =>
+            value.trim() ? null : "Commit message cannot be empty",
         });
-
-        if (!commitMessage) {
-          return; // User cancelled
-        }
-
-        // Execute git command
+        if (!commitMessage) return;
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
@@ -127,25 +156,18 @@ export function activate(context: vscode.ExtensionContext) {
               const { stderr } = await commitWithCustomDate({
                 cwd: workspaceRoot,
                 commitMessage,
-                customCommitDate,
+                customCommitDate: statusBar.getDate(),
               });
-
-              if (stderr && !stderr.includes("warning")) {
+              if (stderr && !stderr.includes("warning"))
                 throw new Error(stderr);
-              }
-
-              const dateInfo = customCommitDate
-                ? ` with date ${formatDate(
-                    customCommitDate,
-                    "YYYY-MM-DD HH:mm:ss",
-                  )}`
+              const customDate = statusBar.getDate();
+              const dateInfo = customDate
+                ? ` with date ${formatDate(customDate, "YYYY-MM-DD HH:mm:ss")}`
                 : "";
-
               vscode.window.showInformationMessage(
                 `Successfully committed${dateInfo}`,
               );
-
-              // Clear custom date after successful commit (optional)
+              // Optionally clear custom date
               const shouldClear = await vscode.window.showQuickPick(
                 ["Keep custom date", "Clear custom date"],
                 {
@@ -153,40 +175,19 @@ export function activate(context: vscode.ExtensionContext) {
                     "What would you like to do with the custom date?",
                 },
               );
-
               if (shouldClear === "Clear custom date") {
-                customCommitDate = null;
-                updateStatusBar();
+                statusBar.setDate(null);
               }
             } catch (error: unknown) {
-              vscode.window.showErrorMessage(
-                `Commit failed: ${(error as Error).message}`,
-              );
+              showError(`Commit failed: ${(error as Error).message}`);
             }
           },
         );
       } catch (error: unknown) {
-        vscode.window.showErrorMessage(
-          `Error during commit: ${(error as Error).message}`,
-        );
+        showError(`Error during commit: ${(error as Error).message}`);
       }
     },
   );
-
-  // Register commands
-  context.subscriptions.push(setDateCommand);
-  context.subscriptions.push(clearDateCommand);
-  context.subscriptions.push(commitWithDateCommand);
-
-  // Initial status bar update
-  updateStatusBar();
-
-  // Listen for configuration changes
-  vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("commitDateSelector")) {
-      updateStatusBar();
-    }
-  });
 }
 
 export function deactivate() {

@@ -3,6 +3,11 @@ import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
+/**
+ * Checks if the given directory is a git repository.
+ * @param cwd - The working directory to check
+ * @returns True if the directory is a git repository, false otherwise
+ */
 export async function isGitRepository(cwd: string): Promise<boolean> {
   try {
     await execAsync("git rev-parse --git-dir", { cwd });
@@ -12,6 +17,47 @@ export async function isGitRepository(cwd: string): Promise<boolean> {
   }
 }
 
+/**
+ * Escapes a commit message for safe use in a shell command.
+ * @param message - The commit message
+ * @returns The escaped commit message
+ */
+function escapeCommitMessage(message: string): string {
+  // Replace double quotes with escaped double quotes and wrap in double quotes
+  return message.replace(/(["\\$`])/g, "\\$1");
+}
+
+/**
+ * Builds a git commit command string with optional custom date.
+ * @param cwd - The working directory
+ * @param commitMessage - The commit message
+ * @param customCommitDate - The custom commit date, or null for current date
+ * @returns The git command string
+ */
+function buildGitCommitCommand({
+  commitMessage,
+  customCommitDate,
+}: {
+  commitMessage: string;
+  customCommitDate: Date | null;
+}): string {
+  let gitCommand = "git add . && git commit";
+  if (customCommitDate) {
+    const isoDate = customCommitDate.toISOString();
+    gitCommand += ` --date=\"${isoDate}\"`;
+    gitCommand = `GIT_AUTHOR_DATE=\"${isoDate}\" ${gitCommand}`;
+  }
+  gitCommand += ` -m \"${escapeCommitMessage(commitMessage)}\"`;
+  return gitCommand;
+}
+
+/**
+ * Commits changes in the given directory with an optional custom commit date.
+ * @param cwd - The working directory
+ * @param commitMessage - The commit message
+ * @param customCommitDate - The custom commit date, or null for current date
+ * @returns The stdout and stderr from the git command
+ */
 export async function commitWithCustomDate({
   cwd,
   commitMessage,
@@ -21,12 +67,6 @@ export async function commitWithCustomDate({
   commitMessage: string;
   customCommitDate: Date | null;
 }): Promise<{ stdout: string; stderr: string }> {
-  let gitCommand = "git add . && git commit";
-  if (customCommitDate) {
-    const isoDate = customCommitDate.toISOString();
-    gitCommand += ` --date="${isoDate}"`;
-    gitCommand = `GIT_AUTHOR_DATE="${isoDate}" ${gitCommand}`;
-  }
-  gitCommand += ` -m "${commitMessage.replace(/"/g, '"')}"`;
+  const gitCommand = buildGitCommitCommand({ commitMessage, customCommitDate });
   return execAsync(gitCommand, { cwd });
 }

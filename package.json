@@ -6,6 +6,28 @@
   "engines": {
     "vscode": "^1.80.0"
   },
+  "publisher": "PKief",
+  "author": {
+    "name": "Philipp Kief",
+    "email": "philipp.kief@gmx.de",
+    "url": "https://github.com/PKief"
+  },
+  "funding": "https://github.com/sponsors/PKief",
+  "sponsor": {
+    "url": "https://github.com/sponsors/PKief"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PKief/vscode-git-commit-date.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PKief/vscode-git-commit-date/issues"
+  },
+  "icon": "logo.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "license": "MIT",
   "type": "module",
   "categories": [
@@ -19,23 +41,35 @@
     "timestamp",
     "version control"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "commitDateSelector.setDate",
         "title": "Set Commit Date",
-        "category": "Git"
+        "category": "Git",
+        "icon": {
+          "dark": "images/calendar-edit.svg",
+          "light": "images/calendar-edit_light.svg"
+        }
       },
       {
         "command": "commitDateSelector.commitWithDate",
         "title": "Commit with Custom Date",
-        "category": "Git"
+        "category": "Git",
+        "icon": {
+          "dark": "images/calendar-check.svg",
+          "light": "images/calendar-check_light.svg"
+        }
       },
       {
         "command": "commitDateSelector.clearDate",
         "title": "Clear Custom Commit Date",
-        "category": "Git"
+        "category": "Git",
+        "icon": {
+          "dark": "images/calendar-remove.svg",
+          "light": "images/calendar-remove_light.svg"
+        }
       }
     ],
     "menus": {
