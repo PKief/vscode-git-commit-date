@@ -31,6 +31,25 @@ export function formatDate(date: Date, format: string): string {
 }
 
 /**
+ * Formats a Date object as 'YYYY-MM-DD HH:mm:ss ±ZZZZ' (local time with timezone offset)
+ */
+export function formatDateWithTimezone(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  const offset = -date.getTimezoneOffset(); // in minutes
+  const sign = offset >= 0 ? "+" : "-";
+  const absOffset = Math.abs(offset);
+  const offsetHours = pad(Math.floor(absOffset / 60));
+  const offsetMinutes = pad(absOffset % 60);
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${sign}${offsetHours}${offsetMinutes}`;
+}
+
+/**
  * Generates a list of date options for the date picker QuickPick.
  * Includes today, yesterday, past week, custom, and clear options.
  * @param customCommitDate - The currently selected custom commit date, if any

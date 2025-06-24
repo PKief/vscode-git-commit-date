@@ -6,6 +6,24 @@ import {
 } from "./dateUtils.js";
 
 /**
+ * Utility to parse a date string (YYYY-MM-DD) as local time at midnight.
+ */
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+/**
+ * Utility to parse a date-time string (YYYY-MM-DD HH:mm:ss) as local time.
+ */
+function parseLocalDateTime(dateTimeStr: string): Date {
+  const [datePart, timePart] = dateTimeStr.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hours, minutes, seconds] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes, seconds, 0);
+}
+
+/**
  * Shows a date and time picker for selecting a custom commit date.
  * @param customCommitDate - The currently selected custom commit date, if any
  * @returns The selected Date object, or null if cancelled/cleared
@@ -27,10 +45,9 @@ export async function showDatePicker(
   if (selectedDateOption.label.includes("Custom Date")) {
     return await promptForCustomDateTime(customCommitDate);
   }
-
-  // Step 3: Parse selected date
+  // Step 3: Parse selected date (always as local time)
   const selectedDate = selectedDateOption.description
-    ? new Date(selectedDateOption.description)
+    ? parseLocalDate(selectedDateOption.description)
     : new Date();
 
   // Step 4: Show time options
@@ -58,13 +75,13 @@ async function promptForCustomDateTime(
       const dateRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
       if (!dateRegex.test(value))
         return "Please use format: YYYY-MM-DD HH:MM:SS";
-      const date = new Date(value);
+      const date = parseLocalDateTime(value);
       if (Number.isNaN(date.getTime())) return "Invalid date";
       return null;
     },
   });
   if (!dateInput) return null;
-  return new Date(dateInput);
+  return parseLocalDateTime(dateInput);
 }
 
 /**
@@ -111,10 +128,10 @@ async function pickTimeForDate(
     });
     if (!timeInput) return null;
     const [hours, minutes, seconds] = timeInput.split(":").map(Number);
+    // Set time as local
     selectedDate.setHours(hours, minutes, seconds, 0);
     return selectedDate;
   }
-
   // Handle predefined time option
   if (selectedTimeOption.description) {
     const [hours, minutes, seconds] = selectedTimeOption.description

@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { platform } from "node:os";
 import { promisify } from "node:util";
+import { formatDateWithTimezone } from "./dateUtils.js";
 
 const execAsync = promisify(exec);
 
@@ -46,14 +47,13 @@ function buildGitCommitCommand({
   const isWindows = platform() === "win32";
   let gitCommand = "git add . && git commit";
   if (customCommitDate) {
-    const isoDate = customCommitDate.toISOString();
-    gitCommand += ` --date=\"${isoDate}\"`;
+    // Use local time with timezone offset for git
+    const localDateStr = formatDateWithTimezone(customCommitDate);
+    gitCommand += ` --date=\"${localDateStr}\"`;
     if (isWindows) {
-      // On Windows, set environment variable and run both commands in one line
-      gitCommand = `set \"GIT_AUTHOR_DATE=${isoDate}\" && ${gitCommand}`;
+      gitCommand = `set \"GIT_AUTHOR_DATE=${localDateStr}\" && ${gitCommand}`;
     } else {
-      // On Unix, prefix the command with the env variable
-      gitCommand = `GIT_AUTHOR_DATE=\"${isoDate}\" ${gitCommand}`;
+      gitCommand = `GIT_AUTHOR_DATE=\"${localDateStr}\" ${gitCommand}`;
     }
   }
   gitCommand += ` -m \"${escapeCommitMessage(commitMessage)}\"`;
