@@ -97,9 +97,9 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Custom date option
         options.push({
-            label: '$(edit) Custom Date',
-            description: 'Enter a specific date manually',
-            detail: 'Format: YYYY-MM-DD HH:MM:SS'
+            label: '$(edit) Custom Date & Time',
+            description: 'Enter a specific date and time manually',
+            detail: 'Pre-filled with current timestamp for easy editing'
         });
 
         // Clear option
@@ -155,7 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
         options.push({
             label: '$(edit) Custom Time',
             description: 'Enter specific time',
-            detail: 'Format: HH:MM:SS'
+            detail: 'Pre-filled with current time for easy editing'
         });
 
         return options;
@@ -182,10 +182,16 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Handle custom date input
         if (selectedDateOption.label.includes('Custom Date')) {
+            // Pre-populate with current timestamp or existing custom date
+            const defaultValue = customCommitDate 
+                ? formatDate(customCommitDate, 'YYYY-MM-DD HH:mm:ss')
+                : formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+
             const dateInput = await vscode.window.showInputBox({
-                prompt: 'Enter commit date and time',
-                placeHolder: 'YYYY-MM-DD HH:MM:SS (e.g., 2023-12-25 14:30:00)',
-                value: customCommitDate ? formatDate(customCommitDate, 'YYYY-MM-DD HH:mm:ss') : '',
+                prompt: 'Enter commit date and time (modify as needed)',
+                placeHolder: 'YYYY-MM-DD HH:MM:SS',
+                value: defaultValue,
+                valueSelection: [0, defaultValue.length], // Select all text for easy editing
                 validateInput: (value: string) => {
                     if (!value.trim()) {
                         return 'Date cannot be empty';
@@ -235,9 +241,18 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Handle custom time input
         if (selectedTimeOption.label.includes('Custom Time')) {
+            // Pre-populate with current time or existing custom time
+            const currentTime = new Date();
+            const defaultTimeValue = customCommitDate && 
+                formatDate(selectedDate, 'YYYY-MM-DD') === formatDate(customCommitDate, 'YYYY-MM-DD')
+                ? formatDate(customCommitDate, 'HH:mm:ss')
+                : formatDate(currentTime, 'HH:mm:ss');
+
             const timeInput = await vscode.window.showInputBox({
-                prompt: 'Enter time',
-                placeHolder: 'HH:MM:SS (e.g., 14:30:00)',
+                prompt: 'Enter time (modify as needed)',
+                placeHolder: 'HH:MM:SS',
+                value: defaultTimeValue,
+                valueSelection: [0, defaultTimeValue.length], // Select all text for easy editing
                 validateInput: (value: string) => {
                     if (!value.trim()) {
                         return 'Time cannot be empty';
