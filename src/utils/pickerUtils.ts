@@ -6,7 +6,7 @@ import {
 } from "./dateUtils";
 
 export async function showDatePicker(
-  customCommitDate: Date | null
+  customCommitDate: Date | null,
 ): Promise<Date | null> {
   const dateOptions = generateDateOptions(customCommitDate, formatDate);
   const selectedDateOption = await vscode.window.showQuickPick(dateOptions, {
@@ -31,7 +31,7 @@ export async function showDatePicker(
         if (!dateRegex.test(value))
           return "Please use format: YYYY-MM-DD HH:MM:SS";
         const date = new Date(value);
-        if (isNaN(date.getTime())) return "Invalid date";
+        if (Number.isNaN(date.getTime())) return "Invalid date";
         return null;
       },
     });

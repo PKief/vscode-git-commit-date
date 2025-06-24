@@ -1,18 +1,17 @@
 import * as vscode from "vscode";
-import { showDatePicker } from "./utils/pickerUtils";
 import { formatDate } from "./utils/dateUtils";
-import { isGitRepository, commitWithCustomDate } from "./utils/gitUtils";
+import { commitWithCustomDate, isGitRepository } from "./utils/gitUtils";
+import { showDatePicker } from "./utils/pickerUtils";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Commit Date Selector extension is now active");
 
-  let statusBarItem: vscode.StatusBarItem;
   let customCommitDate: Date | null = null;
 
   // Create status bar item
-  statusBarItem = vscode.window.createStatusBarItem(
+  const statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left,
-    100
+    100,
   );
   statusBarItem.command = "commitDateSelector.setDate";
   context.subscriptions.push(statusBarItem);
@@ -30,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (customCommitDate) {
       const dateFormat = config.get<string>(
         "dateFormat",
-        "YYYY-MM-DD HH:mm:ss"
+        "YYYY-MM-DD HH:mm:ss",
       );
       const formattedDate = formatDate(customCommitDate, dateFormat);
       statusBarItem.text = `$(clock) ${formattedDate}`;
@@ -64,14 +63,14 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(
           `Commit date set to: ${formatDate(
             customCommitDate,
-            "YYYY-MM-DD HH:mm:ss"
-          )}`
+            "YYYY-MM-DD HH:mm:ss",
+          )}`,
         );
         updateStatusBar();
       } catch (error) {
         vscode.window.showErrorMessage(`Error setting date: ${error}`);
       }
-    }
+    },
   );
 
   // Command: Clear custom commit date
@@ -81,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
       customCommitDate = null;
       updateStatusBar();
       vscode.window.showInformationMessage("Custom commit date cleared");
-    }
+    },
   );
 
   // Command: Commit with custom date
@@ -125,7 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
           },
           async () => {
             try {
-              const { stdout, stderr } = await commitWithCustomDate({
+              const { stderr } = await commitWithCustomDate({
                 cwd: workspaceRoot,
                 commitMessage,
                 customCommitDate,
@@ -138,12 +137,12 @@ export function activate(context: vscode.ExtensionContext) {
               const dateInfo = customCommitDate
                 ? ` with date ${formatDate(
                     customCommitDate,
-                    "YYYY-MM-DD HH:mm:ss"
+                    "YYYY-MM-DD HH:mm:ss",
                   )}`
                 : "";
 
               vscode.window.showInformationMessage(
-                `Successfully committed${dateInfo}`
+                `Successfully committed${dateInfo}`,
               );
 
               // Clear custom date after successful commit (optional)
@@ -152,22 +151,26 @@ export function activate(context: vscode.ExtensionContext) {
                 {
                   placeHolder:
                     "What would you like to do with the custom date?",
-                }
+                },
               );
 
               if (shouldClear === "Clear custom date") {
                 customCommitDate = null;
                 updateStatusBar();
               }
-            } catch (error: any) {
-              vscode.window.showErrorMessage(`Commit failed: ${error.message}`);
+            } catch (error: unknown) {
+              vscode.window.showErrorMessage(
+                `Commit failed: ${(error as Error).message}`,
+              );
             }
-          }
+          },
         );
-      } catch (error: any) {
-        vscode.window.showErrorMessage(`Error during commit: ${error.message}`);
+      } catch (error: unknown) {
+        vscode.window.showErrorMessage(
+          `Error during commit: ${(error as Error).message}`,
+        );
       }
-    }
+    },
   );
 
   // Register commands
