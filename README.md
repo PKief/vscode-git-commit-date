@@ -51,7 +51,7 @@ A VS Code extension that allows you to select a custom timestamp for your git co
 
 ## Requirements
 
-- VS Code 1.74.0 or higher
+- VS Code 1.80.0 or higher
 - Git repository in your workspace
 
 ## How It Works
