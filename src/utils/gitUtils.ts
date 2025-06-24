@@ -1,4 +1,5 @@
 import { exec } from "node:child_process";
+import { platform } from "node:os";
 import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
@@ -41,11 +42,19 @@ function buildGitCommitCommand({
   commitMessage: string;
   customCommitDate: Date | null;
 }): string {
+  // Detect platform
+  const isWindows = platform() === "win32";
   let gitCommand = "git add . && git commit";
   if (customCommitDate) {
     const isoDate = customCommitDate.toISOString();
     gitCommand += ` --date=\"${isoDate}\"`;
-    gitCommand = `GIT_AUTHOR_DATE=\"${isoDate}\" ${gitCommand}`;
+    if (isWindows) {
+      // On Windows, set environment variable and run both commands in one line
+      gitCommand = `set \"GIT_AUTHOR_DATE=${isoDate}\" && ${gitCommand}`;
+    } else {
+      // On Unix, prefix the command with the env variable
+      gitCommand = `GIT_AUTHOR_DATE=\"${isoDate}\" ${gitCommand}`;
+    }
   }
   gitCommand += ` -m \"${escapeCommitMessage(commitMessage)}\"`;
   return gitCommand;
