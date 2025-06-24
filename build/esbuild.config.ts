@@ -8,13 +8,13 @@ const config: BuildOptions = {
   bundle: true,
   platform: 'node',
   metafile: false,
-  target: 'node12',
+  target: 'node16',
   outdir: './dist',
   outbase: './src',
   outExtension: {
-    '.js': '.cjs',
+    '.js': '.js',
   },
-  format: 'cjs',
+  format: 'esm',
   external: ['vscode'],
   loader: {
     '.ts': 'ts',

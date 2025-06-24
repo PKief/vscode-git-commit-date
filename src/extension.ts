@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import { formatDate } from "./utils/dateUtils";
-import { commitWithCustomDate, isGitRepository } from "./utils/gitUtils";
-import { showDatePicker } from "./utils/pickerUtils";
+import { formatDate } from "./utils/dateUtils.js";
+import { commitWithCustomDate, isGitRepository } from "./utils/gitUtils.js";
+import { showDatePicker } from "./utils/pickerUtils.js";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Commit Date Selector extension is now active");

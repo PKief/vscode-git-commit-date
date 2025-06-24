@@ -81,8 +81,7 @@
   },
   "scripts": {
     "vscode:prepublish": "bun run compile",
-    "compile:declarations": "tsc -p ./tsconfig.declarations.json",
-    "compile": "tsc",
+    "compile": "tsc -p ./",
     "build": "bun run compile && bun ./build/build-with-esbuild.ts",
     "watch": "bun ./build/watch-with-esbuild.ts",
     "postcompile": "bun run compile:declarations",

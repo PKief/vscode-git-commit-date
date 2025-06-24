@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import esbuild from 'esbuild';
-import config from './esbuild.config';
+import config from './esbuild.config.ts';
 
 const output = await esbuild.build(config).catch(() => process.exit(1));
 

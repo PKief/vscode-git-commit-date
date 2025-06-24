@@ -3,7 +3,7 @@ import {
   formatDate,
   generateDateOptions,
   generateTimeOptions,
-} from "./dateUtils";
+} from "./dateUtils.js";
 
 export async function showDatePicker(
   customCommitDate: Date | null,

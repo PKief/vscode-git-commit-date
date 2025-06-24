@@ -18,7 +18,16 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "correctness": {
+        "useImportExtensions": {
+          "level": "error",
+          "fix": "safe",
+          "options": {
+            "forceJsExtensions": true
+          }
+        }
+      }
     }
   },
   "javascript": {
