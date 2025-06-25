@@ -119,7 +119,7 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "bun run compile",
+    "vscode:prepublish": "bun run build",
     "compile": "tsc -p ./",
     "build": "bun run compile && bun ./build/build-with-esbuild.ts",
     "watch": "bun ./build/watch-with-esbuild.ts",
