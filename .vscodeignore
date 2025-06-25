@@ -1,10 +1,21 @@
-.vscode/**
-.vscode-test/**
-src/**
-.gitignore
-.yarnrc
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/.eslintrc.json
-**/*.map
-**/*.ts
+# Files to include in the extension package
+# Documentation for this format:
+# https://code.visualstudio.com/api/working-with-extensions/publishing-extension#using-.vscodeignore
+
+# Files for vscode extension
+!CHANGELOG.md
+!LICENSE
+!README.md
+!logo.png
+
+# Translation files
+!package.json
+!package.nls.json
+!package.nls.*.json
+
+# Extension code
+!dist
+!images/*.svg
+
+# Exclude everything else
+**/*

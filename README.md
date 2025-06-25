@@ -1,4 +1,12 @@
-# Commit Date Selector
+<br>
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/PKief/vscode-git-date/main/logo.png" alt="logo" width="200">
+
+  # VS Code Git Date <br><br>
+
+  ####  A VS Code extension to set custom commit timestamps
+</div>
 
 A VS Code extension that allows you to select a custom timestamp for your git commits.
 
