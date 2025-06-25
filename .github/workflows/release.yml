@@ -34,9 +34,6 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git config --global push.followTags true
 
-      - name: 🚀 Prepare release
-        run: bun run preversion
-
       - name: 📜 Generate changelog and release notes
         env:
           # Don't run husky on `git commit`
