@@ -70,24 +70,33 @@ export function generateDateOptions(
     detail: "Use current date with custom time",
   });
 
-  // Yesterday
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  options.push({
-    label: "$(history) Yesterday",
-    description: formatDateFn(yesterday, DEFAULT_DATE_FORMAT),
-    detail: "Use yesterday's date with custom time",
-  });
-
-  // Past week (2-7 days ago)
-  for (let i = 2; i <= 7; i++) {
+  // Past 4 days
+  for (let i = 1; i <= 4; i++) {
     const pastDate = new Date(now);
     pastDate.setDate(pastDate.getDate() - i);
     const dayName = pastDate.toLocaleDateString("en-US", { weekday: "long" });
     options.push({
-      label: `$(clock) ${dayName}`,
+      label: `$(history) ${dayName}`,
       description: formatDateFn(pastDate, DEFAULT_DATE_FORMAT),
-      detail: `${i} days ago`,
+      detail: `${i} day${i > 1 ? "s" : ""} ago`,
+    });
+  }
+
+  // Separator between past and future
+  options.push({
+    label: "",
+    kind: vscode.QuickPickItemKind.Separator,
+  });
+
+  // Next 4 days
+  for (let i = 1; i <= 4; i++) {
+    const futureDate = new Date(now);
+    futureDate.setDate(futureDate.getDate() + i);
+    const dayName = futureDate.toLocaleDateString("en-US", { weekday: "long" });
+    options.push({
+      label: `$(rocket) ${dayName}`,
+      description: formatDateFn(futureDate, DEFAULT_DATE_FORMAT),
+      detail: `${i} day${i > 1 ? "s" : ""} from now`,
     });
   }
 
