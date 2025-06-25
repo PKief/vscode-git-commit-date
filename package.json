@@ -109,6 +109,11 @@
           "type": "string",
           "default": "YYYY-MM-DD HH:mm:ss",
           "description": "Date format for display"
+        },
+        "commitDateSelector.customDate": {
+          "type": "string",
+          "default": "",
+          "description": "The custom commit date to use (ISO 8601 string, managed by the extension)."
         }
       }
     }
