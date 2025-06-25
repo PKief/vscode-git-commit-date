@@ -87,12 +87,12 @@
       "scm/title": [
         {
           "command": "commitDateSelector.setDate",
-          "group": "navigation",
+          "group": "navigation@-10",
           "when": "scmProvider == git"
         },
         {
           "command": "commitDateSelector.commitWithDate",
-          "group": "navigation",
+          "group": "navigation@-11",
           "when": "scmProvider == git"
         }
       ]
