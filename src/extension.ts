@@ -179,20 +179,15 @@ function registerCommitWithDateCommand(statusBar: CommitDateStatusBar) {
             "./utils/dateUtils.js"
           );
           const localDateStr = formatDateWithTimezone(customDate);
-          // Detect shell type
           const shell = vscode.env.shell;
-          let amendCmd: string;
-          if (shell.match(/pwsh|powershell/i)) {
-            // PowerShell
-            amendCmd = `$env:GIT_AUTHOR_DATE=\"${localDateStr}\"; git commit --amend --no-edit --date=\"${localDateStr}\"`;
-          } else if (shell.match(/cmd.exe/i)) {
-            // cmd.exe
-            amendCmd = `set \"GIT_AUTHOR_DATE=${localDateStr}\" && git commit --amend --no-edit --date=\"${localDateStr}\"`;
-          } else {
-            // bash/sh
-            amendCmd = `GIT_AUTHOR_DATE=\"${localDateStr}\" git commit --amend --no-edit --date=\"${localDateStr}\"`;
-          }
-
+          const amendCmd = buildEnvCommand(
+            shell,
+            {
+              GIT_AUTHOR_DATE: localDateStr,
+              GIT_COMMITTER_DATE: localDateStr,
+            },
+            `git commit --amend --no-edit --date=\"${localDateStr}\"`,
+          );
           // Run the amend command in the background using Node.js
           const { exec } = await import("node:child_process");
           exec(
@@ -218,6 +213,33 @@ function registerCommitWithDateCommand(statusBar: CommitDateStatusBar) {
       }
     },
   );
+}
+
+/**
+ * Helper to build a cross-shell command with environment variables.
+ * @param shell - The shell path
+ * @param envVars - Object of env var name to value
+ * @param command - The command to run
+ */
+function buildEnvCommand(
+  shell: string,
+  envVars: Record<string, string>,
+  command: string,
+): string {
+  const envAssignments = Object.entries(envVars).map(([key, value]) => ({
+    key,
+    value,
+  }));
+  if (shell.match(/pwsh|powershell/i)) {
+    // PowerShell
+    return `${envAssignments.map((e) => `$env:${e.key}="${e.value}"`).join("; ")}; ${command}`;
+  } else if (shell.match(/cmd.exe/i)) {
+    // cmd.exe
+    return `${envAssignments.map((e) => `set \"${e.key}=${e.value}\"`).join(" && ")} && ${command}`;
+  } else {
+    // bash/sh
+    return `${envAssignments.map((e) => `${e.key}="${e.value}"`).join(" ")} ${command}`;
+  }
 }
 
 export function deactivate() {
