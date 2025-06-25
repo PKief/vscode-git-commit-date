@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { formatDate } from "./utils/dateUtils.js";
-import { commitWithCustomDate, isGitRepository } from "./utils/gitUtils.js";
+import { isGitRepository } from "./utils/gitUtils.js";
 import { showDatePicker } from "./utils/pickerUtils.js";
 
 /**
@@ -138,51 +138,81 @@ function registerCommitWithDateCommand(statusBar: CommitDateStatusBar) {
           showError("Not a git repository");
           return;
         }
-        const commitMessage = await vscode.window.showInputBox({
-          prompt: "Enter commit message",
-          placeHolder: "Commit message",
-          validateInput: (value: string) =>
-            value.trim() ? null : "Commit message cannot be empty",
-        });
-        if (!commitMessage) return;
-        vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: "Committing changes...",
-            cancellable: false,
-          },
-          async () => {
-            try {
-              const { stderr } = await commitWithCustomDate({
-                cwd: workspaceRoot,
-                commitMessage,
-                customCommitDate: statusBar.getDate(),
-              });
-              if (stderr && !stderr.includes("warning"))
-                throw new Error(stderr);
-              const customDate = statusBar.getDate();
-              const dateInfo = customDate
-                ? ` with date ${formatDate(customDate, "YYYY-MM-DD HH:mm:ss")}`
-                : "";
-              vscode.window.showInformationMessage(
-                `Successfully committed${dateInfo}`,
-              );
-              // Optionally clear custom date
-              const shouldClear = await vscode.window.showQuickPick(
-                ["Keep custom date", "Clear custom date"],
-                {
-                  placeHolder:
-                    "What would you like to do with the custom date?",
-                },
-              );
-              if (shouldClear === "Clear custom date") {
-                statusBar.setDate(null);
-              }
-            } catch (error: unknown) {
-              showError(`Commit failed: ${(error as Error).message}`);
-            }
-          },
+
+        // Use VS Code Git extension API to commit
+        const gitExtension = vscode.extensions.getExtension("vscode.git");
+        if (!gitExtension) {
+          showError("VS Code Git extension not found");
+          return;
+        }
+        const gitApi = gitExtension.isActive
+          ? gitExtension.exports.getAPI(1)
+          : (await gitExtension.activate()).getAPI(1);
+        // Import the Repository type from the Git extension API
+        type Repository = (typeof gitApi.repositories)[0];
+        const repo = gitApi.repositories.find(
+          (r: Repository) => r.rootUri.fsPath === workspaceRoot,
         );
+        if (!repo) {
+          showError("No matching git repository found");
+          return;
+        }
+        const commitMessage = repo.inputBox.value.trim();
+        if (!commitMessage) {
+          showError("Commit message cannot be empty");
+          return;
+        }
+
+        // Stage all changes if nothing is staged
+        if (
+          repo.state.indexChanges.length === 0 &&
+          repo.state.workingTreeChanges.length > 0
+        ) {
+          await repo.add([]); // Add all changes
+        }
+        await repo.commit(commitMessage, false);
+
+        // If a custom date is set, amend the commit with the custom date
+        const customDate = statusBar.getDate();
+        if (customDate) {
+          const { formatDateWithTimezone } = await import(
+            "./utils/dateUtils.js"
+          );
+          const localDateStr = formatDateWithTimezone(customDate);
+          // Detect shell type
+          const shell = vscode.env.shell;
+          let amendCmd: string;
+          if (shell.match(/pwsh|powershell/i)) {
+            // PowerShell
+            amendCmd = `$env:GIT_AUTHOR_DATE=\"${localDateStr}\"; git commit --amend --no-edit --date=\"${localDateStr}\"`;
+          } else if (shell.match(/cmd.exe/i)) {
+            // cmd.exe
+            amendCmd = `set \"GIT_AUTHOR_DATE=${localDateStr}\" && git commit --amend --no-edit --date=\"${localDateStr}\"`;
+          } else {
+            // bash/sh
+            amendCmd = `GIT_AUTHOR_DATE=\"${localDateStr}\" git commit --amend --no-edit --date=\"${localDateStr}\"`;
+          }
+
+          // Run the amend command in the background using Node.js
+          const { exec } = await import("node:child_process");
+          exec(
+            amendCmd,
+            { cwd: workspaceRoot, shell: shell },
+            (error, _stdout, stderr) => {
+              if (error) {
+                showError(`Amend failed: ${stderr || error.message}`);
+              } else {
+                vscode.window.showInformationMessage(
+                  `Committed and amended date to: ${localDateStr}`,
+                );
+              }
+            },
+          );
+        } else {
+          vscode.window.showInformationMessage(
+            "Committed using VS Code Git extension",
+          );
+        }
       } catch (error: unknown) {
         showError(`Error during commit: ${(error as Error).message}`);
       }
