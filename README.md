@@ -1,7 +1,7 @@
 <br>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/PKief/vscode-git-date/main/logo.png" alt="logo" width="200">
+  <img src="https://raw.githubusercontent.com/PKief/vscode-git-commit-date/refs/heads/main/logo.png" alt="logo" width="200">
 
   # VS Code Git Date <br><br>
 
