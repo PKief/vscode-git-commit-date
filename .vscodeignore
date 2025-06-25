@@ -14,7 +14,7 @@
 !package.nls.*.json
 
 # Extension code
-!dist
+!dist/extension.js
 !images/*.svg
 
 # Exclude everything else
